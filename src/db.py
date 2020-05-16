@@ -4,7 +4,6 @@ from sqlalchemy.orm import *
 from sqlalchemy.ext.declarative import declarative_base
 
 from dotenv import load_dotenv
-
 load_dotenv('.env')
 
 db = os.environ.get("DB")
@@ -17,7 +16,7 @@ database = os.environ.get("DATABASE")
 
 db_url = f"{db}+{driver}://{username}:{password}@{host}:{port}/{database}"
 
-print("db_url: ",db_url)
+print("db_url: ", db_url)
 
 # DB接続するためのEngineインスタンス
 engine = create_engine(db_url, echo=True)
@@ -32,6 +31,7 @@ session = scoped_session(
 # 各modelで利用
 # classとDBをMapping
 Base = declarative_base()
+
 
 # クラス
 class Prefecture(Base):
@@ -49,6 +49,7 @@ class Prefecture(Base):
     #cities = relationship("City", backref="prefectures")
     #posts = relationship("Post", backref="prefectures")
     
+
     def __repr__(self):
         return "id:{}".format(id)
 
@@ -71,7 +72,6 @@ class City(Base):
     
     def __repr__(self):
         return "id:{}".format(id)
-
 
 
 class Post(Base):
@@ -100,7 +100,7 @@ class Tousan(Base):
     id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False)
     tousan_date = Column(DATE)
     name = Column(String(255), nullable=False, index=True)
-    prefecture= Column(String(10), index=True)
+    prefecture = Column(String(10), index=True)
     indastry = Column(String(50))
     prefecture_id = Column(Integer, index=True)
     city_id = Column(Integer, index=True)

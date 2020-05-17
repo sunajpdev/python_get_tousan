@@ -16,7 +16,6 @@ database = os.environ.get("DATABASE")
 
 db_url = f"{db}+{driver}://{username}:{password}@{host}:{port}/{database}"
 
-print("db_url: ", db_url)
 
 # DB接続するためのEngineインスタンス
 engine = create_engine(db_url, echo=True)
@@ -45,9 +44,7 @@ class Prefecture(Base):
     created = Column(DateTime(timezone=True), server_default=func.now())
     updated = Column(DateTime(timezone=True), server_default=func.now())
     
-    # リレーション
-    #cities = relationship("City", backref="prefectures")
-    #posts = relationship("Post", backref="prefectures")
+    cities = relationship("City", order_by = City.id, back_populates="prefecture")
     
 
     def __repr__(self):
@@ -68,7 +65,7 @@ class City(Base):
     created = Column(DateTime(timezone=True), server_default=func.now())
     updated = Column(DateTime(timezone=True), server_default=func.now())
 
-    #posts = relationship("Post", backref="cities")
+    prefecture = relationship("Prefecture", back_populates = "cities")
     
     def __repr__(self):
         return "id:{}".format(id)

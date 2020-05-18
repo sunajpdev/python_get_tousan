@@ -18,7 +18,8 @@ db_url = f"{db}+{driver}://{username}:{password}@{host}:{port}/{database}"
 
 
 # DB接続するためのEngineインスタンス
-engine = create_engine(db_url, echo=True)
+# engine = create_engine(db_url, echo=True)
+engine = create_engine(db_url, echo=False)
 # engine = create_engine('sqlite:///:memory:')
 
 # DBに対してORM操作するときに利用
@@ -33,24 +34,6 @@ Base = declarative_base()
 
 
 # クラス
-class Prefecture(Base):
-    "都道府県"
-    __tablename__ = 'prefectures'
-
-    id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False)    
-    name = Column(String(10), nullable=False, index=True, unique=True)
-    kana = Column(String(10), nullable=False, index=True)
-
-    created = Column(DateTime(timezone=True), server_default=func.now())
-    updated = Column(DateTime(timezone=True), server_default=func.now())
-    
-    cities = relationship("City", order_by = City.id, back_populates="prefecture")
-    
-
-    def __repr__(self):
-        return "id:{}".format(id)
-
-    
 class City(Base):
     "市町村"
     __tablename__ = 'cities'
@@ -67,6 +50,24 @@ class City(Base):
 
     prefecture = relationship("Prefecture", back_populates = "cities")
     
+    def __repr__(self):
+        return "id:{}".format(id)
+
+
+class Prefecture(Base):
+    "都道府県"
+    __tablename__ = 'prefectures'
+
+    id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False)    
+    name = Column(String(10), nullable=False, index=True, unique=True)
+    kana = Column(String(10), nullable=False, index=True)
+
+    created = Column(DateTime(timezone=True), server_default=func.now())
+    updated = Column(DateTime(timezone=True), server_default=func.now())
+    
+    cities = relationship("City", order_by = City.id, back_populates="prefecture")
+    
+
     def __repr__(self):
         return "id:{}".format(id)
 

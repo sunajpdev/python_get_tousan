@@ -1,24 +1,15 @@
 import requests
+import re
+from datetime import datetime
+
 from bs4 import BeautifulSoup
 import pandas as pd
 
-from .db import session, engine
+from .db import session, engine, City, Prefecture, Tousan
 
 
-# 都道府県が一致する場合はprefecture_idをセットする
-def address_to_prefecture_id(address):
-    q=f"prefecture.str.contains('{address}')"
-    res = df_prefecture.query(q)
-    return int(res["id"]) if len(res["id"]) else 0
-
-def address_to_prefecture_city_id(address):
-    q = f"city.str.contains('{address}')" 
-    res = df_city.query(q)
-    return  list(res)
-
-
-# 都道府県　変換
-def prefecture(address):
+# 都道府県 変換
+def get_prefecture(address):
     address = str(address)
     if "東京都" in address:
         res = "東京都"
@@ -32,20 +23,47 @@ def prefecture(address):
         res = ""
     return res
 
-# 市町村から都道府県取得
-def address_to_prefecture(address):
-    address = str(address)
-    res =  df_city[df_city["city"].map(lambda s: s in address)]
-    res = res.iloc[0]["prefecture"] if len(res) > 0 else ""
+
+def get_address_to_prefecture_city(address):
+    '市町村から都道府県取得'
+    # 都道府県がある場合は抽出する
+    prefecture = get_prefecture(address)
+
+    # addressから都道府県以下のみ取得する
+    search = "%" + str(address).replace(prefecture, '') + "%"
+    city = session.query(City.id, City.prefecture_id, Prefecture.name).join(Prefecture).filter(City.name.like(search))
+    if prefecture:
+        city.filter(Prefecture.name == prefecture)
+    res = city.first()
     
-    # 政令指定都市で区がないケース
-    if res == "":
-        res = df_city[df_city["city"].str.contains(address)]
-        res = res.iloc[0]["prefecture"] if len(res) > 0 else ""
     return res
 
+
+def get_tousan_list(l, page):
+    'bsのリストから倒産情報を抜き出してlistで返す'
+    data = {}
+    data["page"] = page
+    date_ = l.select_one(".date").text.replace(" 公開", "")
+    data["tousan_date"] = datetime.strptime(date_, "%Y年%m月%d日").strftime("%Y-%m-%d")
+    name_address = l.select_one("h3 a").text.split("｜")
+    data["name"] = name_address[0].replace("(株)", "株式会社 ").replace("(有)", "有限会社 ")
+    data["address"] = name_address[1] if len(name_address) > 1 else ""
+    text_ = l.select_one("h4").text.replace("\t", "").strip()
+    data["text"] = text_
+    data["url"] = l.select_one("h3 a")["href"]
+
+    data['indastry'] = ",".join(re.findall('【業種】(.+?)【倒産形態】', text_)).strip()
+    data['type'] = re.sub('【負債総額】.+', '', ",".join(re.findall('【倒産形態】(.+?)$', text_))).strip()
+    data['debt'] = ",".join(re.findall('【負債総額】(.+$)', text_)).strip()
+
+    # 都道府県名、市町村コード、都道府県コードを取得
+    data['city_id'], data['prefecture_id'], data['prefecture'] = get_address_to_prefecture_city(data['address'])
+
+    return data
+
+
 def main():
-    pd.set_option('display.max_rows',  500)
+    pd.set_option('display.max_rows', 500)
 
     url = "https://www.tokyo-keizai.com/tosan-archive/page/{0}".format(1)
     res = requests.get(url)
@@ -65,80 +83,31 @@ def main():
         
         # 取得
         for l in lists:
-            data = {}
-            data["page"] = page
-            data["date"] = l.select_one(".date").text.replace(" 公開", "")
-            name_address = l.select_one("h3 a").text.split("｜")
-            data["name"] = name_address[0].replace("(株)", "株式会社 ").replace("(有)", "有限会社 ")
-            data["address"] = name_address[1] if len(name_address) > 1 else ""
-            data["text"] = l.select_one("h4").text.replace("\t", "")
-            data["url"] = l.select_one("h3 a")["href"]
-            
+            data = get_tousan_list(l, page)
             datas.append(data)
 
-
-    # 都道府県、市町村の読み込み
-    sql = """
-    SELECT id, name as prefecture
-    FROM prefectures a
-    """
-    df_prefecture = pd.read_sql(sql, engine)
-
-
-    sql = """
-    SELECT b.prefecture_id, b.id as city_id, a.name as prefecture, b.name as city, a.name || b.name as prefecture_city
-    FROM prefectures a
-    INNER JOIN cities b ON a. id = b.prefecture_id
-    """
-    df_city = pd.read_sql(sql, engine)
-
-    # pandas
+    # CSV保存
     df = pd.DataFrame(datas)
-    # 変換処理
-    df['date'] = pd.to_datetime(df['date'], format='%Y年%m月%d日').dt.date
-    df["address"] = df["address"].str.strip()
-    df["indastry"] = df["text"].str.extract("【業種】( .+)?【倒産")
-    df["type"] = df["text"].str.extract("【倒産形態】(.+?)$")
-    df["type"] = df["type"].str.replace("【負債総額】.+", "")
-    df["debt"] = df["text"].str.extract("【負債総額】(.+$)")
-    df["prefecture_id"] = 0
-    df["city_id"] = 0
-
-    # 都道府県を取得
-    df["prefecture"] = df["address"].map(prefecture)
-
-    # 市町村から都道府県を取得
-    for index, row in df.iterrows():
-        if df.loc[index, "prefecture"] == "":
-            df.loc[index, "prefecture"] = address_to_prefecture(row["address"])
-
     df.to_csv("_tousan.csv")
 
     # DB登録
-    df.to_sql('tmp_tousans', engine, if_exists="replace" )
+    for data in datas:
+        # 同じURLがない場合のみ登録
+        cnt = session.query(Tousan.id).filter(Tousan.url == data['url']).count()
+        if cnt == 0:
+            tousan = Tousan()        
+            # 倒産情報の辞書をオブジェクトにセット
+            for k, v in data.items():
+                setattr(tousan, k, v)
+            session.add(tousan)
+            try:
+                session.commit()
+            except Exception as e:
+                print("INSERT ERROR:", data)
 
-    sql = '''
-    INSERT INTO tousans (url, name, tousan_date, indastry, prefecture_id, city_id, address, note, prefecture, debt)
-    SELECT url, name, date::date, indastry, prefecture_id, city_id, address, 'text', prefecture, debt
-    FROM tmp_tousans a
-    WHERE NOT EXISTS (
-        SELECT 1 FROM tousans b
-        WHERE a.url = b.url	
-    );
-    '''
-    # t = text(sql)
-    try:
-        session.execute(sql)
-        session.commit()
-    except :
-        print("Error: INSERT tousans")
-
-
-    df2 = pd.read_csv("tousan.csv")
-    df = pd.concat([df, df2]).drop_duplicates(['url'], keep='last')
-    df = df[["page", "date", "name", "address", "text", "url", "indastry", "type", "debt", "prefecture_id", "city_id", "prefecture"]]
-    df.to_csv('tousan.csv')
-
+            finally:
+                print("INSERT :", data)
+        
 
 if __name__ == "__main__":
     main()

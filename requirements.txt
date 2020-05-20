@@ -1,4 +1,4 @@
-dotenv
+python-dotenv
 sqlalchemy
 bs4
 pandas

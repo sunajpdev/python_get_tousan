@@ -2,5 +2,5 @@ python-dotenv
 sqlalchemy
 bs4
 pandas
+psycopg2
 mojimoji
-sqlalchemy

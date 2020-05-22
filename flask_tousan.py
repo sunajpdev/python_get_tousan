@@ -8,13 +8,14 @@ app = Flask(__name__)
 @app.route('/')
 def tousan():
     ''
-    tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1').all()
+    tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1').order_by(Tousan.tousan_date.desc()).all()
     return render_template("tousan.html", title='倒産情報', tousans=tousans)
 
 @app.route('/prefecture/<prefecture>')
 def prefecture(prefecture):
     '都道府県別'
-    tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1', Tousan.prefecture == prefecture).all()
+    tousans = session.query(Tousan).filter(
+        Tousan.tousan_date >= '2020/1/1', Tousan.prefecture == prefecture).order_by(Tousan.tousan_date.desc()).all()
     
     return render_template("tousan.html", title='倒産情報 都道府県', tousans=tousans)
 
@@ -46,7 +47,7 @@ def indastries():
 @app.route('/indastry/<indastry>')
 def indastry(indastry):
     '業種全データ'
-    tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1', Tousan.indastry == indastry).all()
+    tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1', Tousan.indastry == indastry).order_by(Tousan.tousan_date.desc()).all()
     return render_template("tousan.html", title='倒産情報 業界', tousans=tousans)
 
 

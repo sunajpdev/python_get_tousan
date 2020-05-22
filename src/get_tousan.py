@@ -21,13 +21,13 @@ def get_tousan_list(l, page):
     name_address = l.select_one("h3 a").text.split("｜")
     data["name"] = name_address[0].replace("(株)", "株式会社 ").replace("(有)", "有限会社 ").strip()
     data["address"] = name_address[1].strip() if len(name_address) > 1 else ""
-    text_ = l.select_one("h4").text.replace("\t", "").strip()
-    data["text"] = text_
+    note = l.select_one("h4").text.replace("\t", "").strip()
+    data["note"] = note
     data["url"] = l.select_one("h3 a")["href"].strip()
 
-    data['indastry'] = ",".join(re.findall('【業種】(.+?)【倒産形態】', text_)).strip()
-    data['type'] = re.sub('【負債総額】.+', '', ",".join(re.findall('【倒産形態】(.+?)$', text_))).strip()
-    data['debt'] = ",".join(re.findall('【負債総額】(.+$)', text_)).strip()
+    data['indastry'] = ",".join(re.findall('【業種】(.+?)【倒産形態】', note)).strip()
+    data['type'] = re.sub('【負債総額】.+', '', ",".join(re.findall('【倒産形態】(.+?)$', note))).strip()
+    data['debt'] = ",".join(re.findall('【負債総額】(.+$)', note)).strip()
 
     # 都道府県名、市町村コード、都道府県コードを取得
     data['city_id'], data['prefecture_id'], data['prefecture'] = get_address_to_prefecture_city(data['address'])

@@ -5,6 +5,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 import pandas as pd
+from sqlalchemy.dialects.postgresql import insert
 
 from .db import session, engine, City, Prefecture, Tousan
 from .lib.lib_csv import LibCsv
@@ -16,7 +17,6 @@ TMP_CSV_FILENAME = "./tmp/_tousan.csv"
 def get_tousan_list(l, page):
     'bsのリストから倒産情報を抜き出してlistで返す'
     data = {}
-    data["page"] = page
     date_ = l.select_one(".date").text.replace(" 公開", "")
     data["tousan_date"] = datetime.strptime(date_, "%Y年%m月%d日").strftime("%Y-%m-%d")
     name_address = l.select_one("h3 a").text.split("｜")
@@ -66,17 +66,17 @@ def get_data_to_list():
 def save_db(datas):
     'リストの内容をDBに登録する'
     for data in datas:
-        # 同じURLがない場合のみ登録
-        cnt = session.query(Tousan.id).filter(Tousan.url == data['url']).count()
-        if cnt == 0:
-            try:
-                engine.execute(Tousan.__table__.insert(), data)
-            except:
-                print("INSERT ERROR: ", data)
-            finally:
-                print("INSERT :", data)
-        else:
-            print("SKIP :", data["name"], cnt)
+        # 空の要素を削除
+        data = {k:v for k,v in data.items() if v != ''}
+        # ユニークキー違反 url エラーをスキップ
+        sql = insert(Tousan).on_conflict_do_nothing(
+            index_elements=["url"]
+        )
+        try:
+            session.execute(sql, data)
+        except:
+            print("SKIP: ", data["name"])
+    session.commit()
 
 
 def save_csv_file_to_db(fname):
@@ -84,6 +84,7 @@ def save_csv_file_to_db(fname):
     # CSVを読み込み
     lib_csv = LibCsv()
     datas = lib_csv.open_csv_dict(fname)
+
     # DBに保存
     save_db(datas)
 

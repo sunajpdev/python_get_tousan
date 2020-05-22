@@ -100,6 +100,7 @@ class Tousan(Base):
     name = Column(String(255), nullable=False, index=True)
     prefecture = Column(String(10), index=True)
     indastry = Column(String(50))
+    type = Column(String(50))
     debt = Column(String(100))
     prefecture_id = Column(Integer, index=True)
     city_id = Column(Integer, index=True)

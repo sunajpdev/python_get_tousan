@@ -2,3 +2,5 @@ python-dotenv
 sqlalchemy
 bs4
 pandas
+mojimoji
+sqlalchemy

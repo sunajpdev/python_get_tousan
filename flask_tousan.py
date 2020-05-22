@@ -8,8 +8,10 @@ app = Flask(__name__)
 @app.route('/')
 def tousan():
     ''
+    last_update = session.query(func.max(Tousan.created)).one()[0].strftime("%Y/%m/%d %H:%M:%S")
+
     tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1').order_by(Tousan.tousan_date.desc()).all()
-    return render_template("tousan.html", title='倒産情報', tousans=tousans)
+    return render_template("tousan.html", title='倒産情報', tousans=tousans, last_update=last_update)
 
 @app.route('/prefecture/<prefecture>')
 def prefecture(prefecture):

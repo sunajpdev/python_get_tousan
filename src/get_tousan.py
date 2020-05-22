@@ -1,3 +1,4 @@
+import sys
 import requests
 import re
 from datetime import datetime
@@ -78,8 +79,17 @@ def save_db(datas):
             print("SKIP :", data["name"], cnt)
 
 
+def save_csv_file_to_db(fname):
+    'CSVファイル名を指定してDBに保存'
+    # CSVを読み込み
+    lib_csv = LibCsv()
+    datas = lib_csv.open_csv_dict(fname)
+    # DBに保存
+    save_db(datas)
+
+
 def main():
-    # 倒産情報を取得して、CSVに保存
+    '倒産情報を取得して、CSVに保存'
     datas = get_data_to_list()
 
     # CSVに保存
@@ -87,11 +97,5 @@ def main():
     lib_csv = LibCsv()
     lib_csv.save_csv_dict(fname, datas)
 
-    # CSVを読み込み
-    datas = lib_csv.open_csv_dict(fname)
-    # DBに保存
-    save_db(datas)
-
-
-if __name__ == "__main__":
-    main()
+    # DB保存
+    save_csv_file_to_db(fname)

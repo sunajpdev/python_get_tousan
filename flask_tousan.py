@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from .db import session, engine, func, City, Prefecture, Tousan
+from src.db import session, engine, func, City, Prefecture, Tousan
 
 
 app = Flask(__name__)

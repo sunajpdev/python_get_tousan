@@ -16,10 +16,25 @@ def get_prefecture(address):
     return res
 
 
+def after_string_delete(del_str, address):
+    'del_strがある場合は、del_str以降を削除した文字列を返す'
+    l = address.find(del_str)
+    if l > 0:
+        address = address[:l]
+
+    return address
+
+
 def get_address_to_prefecture_city(address):
     '市町村から都道府県取得'
+    # 整形処理
+    address = address.strip()
+    address = after_string_delete("（", address)
+    address = after_string_delete("～", address)
+
     # 都道府県がある場合は抽出する
     prefecture = get_prefecture(address)
+
 
     # addressから都道府県以下のみ取得する
     search = "%" + str(address).replace(prefecture, '') + "%"
@@ -28,4 +43,9 @@ def get_address_to_prefecture_city(address):
         city.filter(Prefecture.name == prefecture)
     res = city.first()
     
+    # resがnullのケース
+    if not res:
+        print("ADDRESS ERROR: ", address)
+        res = ("", "", prefecture)
+
     return res

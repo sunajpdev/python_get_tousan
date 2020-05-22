@@ -26,13 +26,6 @@ def get_tousan_list(l, page):
     data["note"] = note
     data["url"] = l.select_one("h3 a")["href"].strip()
 
-    data['indastry'] = ",".join(re.findall('【業種】(.+?)【倒産形態】', note)).strip()
-    data['type'] = re.sub('【負債総額】.+', '', ",".join(re.findall('【倒産形態】(.+?)$', note))).strip()
-    data['debt'] = ",".join(re.findall('【負債総額】(.+$)', note)).strip()
-
-    # 都道府県名、市町村コード、都道府県コードを取得
-    data['city_id'], data['prefecture_id'], data['prefecture'] = get_address_to_prefecture_city(data['address'])
-
     return data
 
 
@@ -118,4 +111,3 @@ def main():
     # DB保存
     commit_count = save_csv_file_to_db(fname)
     print("SAVE DB commit count:", commit_count)
-    

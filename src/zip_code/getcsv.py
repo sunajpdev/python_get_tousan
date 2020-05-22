@@ -57,6 +57,7 @@ def insert_db():
     "tmp_postに登録された情報を各テーブルに保存する"
 
     # 都道府県追加
+    print("DB INSERT Prefecture")
     sql = """
     INSERT INTO prefectures (name, kana)
     SELECT a.prefecture , a.prefecture_kana
@@ -69,6 +70,7 @@ def insert_db():
 
 
     # 市町村追加
+    print("DB INSERT City")
     sql = """
     INSERT INTO cities (prefecture_id , citycode , name, kana)
     SELECT b.id AS prefecture_id , a.citycode , a.city , a.city_kana
@@ -82,6 +84,7 @@ def insert_db():
 
 
     # 郵便番号追加
+    print("DB INSERT Post")
     sql = """
     INSERT INTO posts (post, prefecture_id , city_id, address, address_kana )
     SELECT tp.post, p.id AS prefecture_id, c.id AS city_id, tp.address , tp.address_kana 
@@ -104,18 +107,21 @@ def main():
     # ダウンロードファイルがある場合は処理をスキップ
     if not os.path.isfile(DOWNLOAD_FILENAME):
         # ダウンロード
+        print("CSV Download")
         url = "https://www.post.japanpost.jp/zipcode/dl/oogaki/zip/ken_all.zip"
         download(url, DOWNLOAD_FILENAME)
 
         # ファイルを解凍
+        print("UNZip CSV")
         with zipfile.ZipFile(DOWNLOAD_FILENAME) as zip:
             zip.extractall(TMP_DIR)
     
     # CSVファイルをtmp_tableに保存後、都道府県、市町村、郵便番号テーブルに保存
     df = read_csv_df(CSV_FILENAME)
+    print("CSV TO DB tmp_posts")
     df.to_sql('tmp_posts', engine, if_exists="replace" )
     insert_db()
-
+    print("End Script")
 
 if __name__ == "__main__":
     main()

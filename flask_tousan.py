@@ -1,3 +1,5 @@
+import datetime
+
 from flask import Flask, render_template
 from src.db import session, engine, func, City, Prefecture, Tousan
 
@@ -5,11 +7,18 @@ from src.db import session, engine, func, City, Prefecture, Tousan
 app = Flask(__name__)
 
 
+@app.template_filter()
+def jptime(dt, format='%Y-%m-%d %H:%M:%S'):
+    u"""utcの時間を日本時間で指定されたフォーマットで文字列化する."""
+    local = dt + datetime.timedelta(hours=9)
+    return local.strftime(format)
+
+
 @app.route('/')
 def tousan():
     ''
-    last_update = session.query(func.max(Tousan.created)).one()[0].strftime("%Y/%m/%d %H:%M:%S")
-
+    last_update = session.query(func.max(Tousan.created)).one()[0]
+    last_update = jptime(last_update)
     tousans = session.query(Tousan).filter(Tousan.tousan_date >= '2020/1/1').order_by(Tousan.tousan_date.desc()).all()
     return render_template("tousan.html", title='倒産情報', tousans=tousans, last_update=last_update)
 

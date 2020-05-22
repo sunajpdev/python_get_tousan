@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from .db import session, engine, City, Prefecture, Tousan
 from .lib.lib_csv import LibCsv
-from .lib.address import *
+from .lib.address import get_address_to_prefecture_city
 
 TMP_CSV_FILENAME = "./tmp/_tousan.csv"
 
@@ -64,7 +64,8 @@ def get_data_to_list():
 
 
 def save_db(datas):
-    'リストの内容をDBに登録する'
+    'リストの内容をDBに登録。コミット数した件数を返す'
+    commit_count = 0
     for data in datas:
         # 空の要素を削除
         data = {k:v for k,v in data.items() if v != ''}
@@ -74,9 +75,11 @@ def save_db(datas):
         )
         try:
             session.execute(sql, data)
+            commit_count += 1
         except:
             print("SKIP: ", data["name"])
     session.commit()
+    return commit_count
 
 
 def save_csv_file_to_db(fname):
@@ -85,9 +88,23 @@ def save_csv_file_to_db(fname):
     lib_csv = LibCsv()
     datas = lib_csv.open_csv_dict(fname)
 
-    # DBに保存
-    save_db(datas)
+    # 都道府県が入っていない場合に備えた処理
+    datas_prefecture = []
+    for data in datas:
+        data['city_id'], data['prefecture_id'], data['prefecture'] = get_address_to_prefecture_city(data['address'])
+        
+        note = data["note"]
+        if note:
+            data['indastry'] = ",".join(re.findall('【業種】(.+?)【倒産形態】', note)).strip()
+            data['type'] = re.sub('【負債総額】.+', '', ",".join(re.findall('【倒産形態】(.+?)$', note))).strip()
+            data['debt'] = ",".join(re.findall('【負債総額】(.+$)', note)).strip()
 
+        datas_prefecture.append(data)
+
+
+    # DBに保存
+    commit_count = save_db(datas_prefecture)
+    return commit_count
 
 def main():
     '倒産情報を取得して、CSVに保存'
@@ -99,4 +116,6 @@ def main():
     lib_csv.save_csv_dict(fname, datas)
 
     # DB保存
-    save_csv_file_to_db(fname)
+    commit_count = save_csv_file_to_db(fname)
+    print("SAVE DB commit count:", commit_count)
+    

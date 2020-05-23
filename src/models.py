@@ -1,8 +1,8 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Text, DATE, DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy.orm import relationship
 
-from .db import session, engine, Base
+from .db import engine, Base
+
 
 # クラス
 class City(Base):
@@ -10,7 +10,7 @@ class City(Base):
     __tablename__ = 'cities'
     __table_args__ = (UniqueConstraint('prefecture_id', 'name'),{})
 
-    id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False) 
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) 
     prefecture_id = Column(Integer, ForeignKey('prefectures.id'))
     citycode = Column(String(10), nullable=False, index=True)
     name = Column(String(20), nullable=False, index=True)
@@ -37,7 +37,6 @@ class Prefecture(Base):
     updated = Column(DateTime(timezone=True), server_default=func.now())
     
     cities = relationship("City", order_by = City.id, back_populates="prefecture")
-    
 
     def __repr__(self):
         return "id:{}".format(id)
@@ -47,9 +46,9 @@ class Post(Base):
     "郵便番号"
     __tablename__ = 'posts'
     # 複数条件でユニーク 大阪の八尾木がカナだけ違うためaddress_kanaも追加
-    __table_args__ = (UniqueConstraint('post','prefecture_id', 'city_id', 'address', 'address_kana'),{})
+    __table_args__ = (UniqueConstraint('post', 'prefecture_id', 'city_id', 'address', 'address_kana'),{})
 
-    id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False)    
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)    
     post = Column(String(10), nullable=False, index=True)
     prefecture_id = Column(Integer, ForeignKey('prefectures.id') )
     city_id = Column(Integer, ForeignKey('cities.id'))
@@ -65,7 +64,7 @@ class Post(Base):
 
 class Tousan(Base):
     "倒産情報"
-    __tablename__ = 'tousans'    
+    __tablename__ = 'tousans'
     id = Column(Integer, primary_key=True,  autoincrement=True, nullable=False)
     tousan_date = Column(DATE)
     name = Column(String(255), nullable=False, index=True)

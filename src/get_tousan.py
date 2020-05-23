@@ -1,4 +1,3 @@
-import sys
 import requests
 import re
 from datetime import datetime
@@ -6,8 +5,8 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from sqlalchemy.dialects.postgresql import insert
 
-from .db import session, engine
-from .models import City, Prefecture, Tousan
+from .db import session
+from .models import Tousan
 from .lib.lib_csv import LibCsv
 from .lib.address import get_address_to_prefecture_city
 
@@ -28,10 +27,12 @@ def get_tousan_list(l, page):
 
     return data
 
-def scraping_to_bs(url,matche_pattern):
+
+def scraping_to_bs(url, matche_pattern):
     res = requests.get(url)
     bs = BeautifulSoup(res.text, 'lxml')
     return bs.select(matche_pattern)
+
 
 def get_data_to_list():
     'WebPegaを取得し、倒産情報をリストで返す'
@@ -93,11 +94,11 @@ def save_csv_file_to_db(fname):
 
         datas_prefecture.append(data)
 
-
     # DBに保存
     confilict = ["url"]
     commit_count = save_db(datas_prefecture, Tousan, confilict)
     return commit_count
+
 
 def main():
     '倒産情報を取得して、CSVに保存'

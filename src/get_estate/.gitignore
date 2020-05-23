@@ -1,0 +1,7 @@
+__pycache__
+data/error/*
+data/get/*
+data/processed/*
+data/processing/*
+!.gitkeep
+.DS_Store

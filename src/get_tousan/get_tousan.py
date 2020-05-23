@@ -5,10 +5,10 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from sqlalchemy.dialects.postgresql import insert
 
-from .db import session
-from .models import Tousan
-from .lib.lib_csv import LibCsv
-from .lib.address import get_address_to_prefecture_city
+from src.db import session
+from src.models import Tousan
+from src.lib.lib_csv import LibCsv
+from src.lib.address import get_address_to_prefecture_city
 
 TMP_CSV_FILENAME = "./tmp/_tousan.csv"
 

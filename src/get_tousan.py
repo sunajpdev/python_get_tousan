@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-import pandas as pd
 from sqlalchemy.dialects.postgresql import insert
 
 from .db import session, engine
@@ -29,15 +28,16 @@ def get_tousan_list(l, page):
 
     return data
 
+def scraping_to_bs(url,matche_pattern):
+    res = requests.get(url)
+    bs = BeautifulSoup(res.text, 'lxml')
+    return bs.select(matche_pattern)
 
 def get_data_to_list():
     'WebPegaを取得し、倒産情報をリストで返す'
-    pd.set_option('display.max_rows', 500)
 
     url = "https://www.tokyo-keizai.com/tosan-archive/page/{0}".format(1)
-    res = requests.get(url)
-    bs = BeautifulSoup(res.text, 'lxml')
-    totalpage = int(bs.select_one(".wp-pagenavi .pages").text.split(" / ")[1])
+    totalpage = scraping_to_bs(url, ".wp-pagenavi .pages")[0].text.split(" / ")[1]
 
     datas = []
     pageindex = 1
@@ -46,10 +46,8 @@ def get_data_to_list():
     for i in range(maxpage - pageindex):
         page = i + pageindex
         url = "https://www.tokyo-keizai.com/tosan-archive/page/{0}".format(page)
-        res = requests.get(url)
-        bs = BeautifulSoup(res.text, 'lxml')
-        lists = bs.select(".page-content .archive_list")
-        
+        matche_pattern = ".page-content .archive_list"
+        lists = scraping_to_bs(url, matche_pattern)
         # 取得
         for l in lists:
             data = get_tousan_list(l, page)
@@ -57,15 +55,15 @@ def get_data_to_list():
     return datas
 
 
-def save_db(datas):
+def save_db(datas, modelname, confilict):
     'リストの内容をDBに登録。コミット数した件数を返す'
     commit_count = 0
     for data in datas:
         # 空の要素を削除
         data = {k:v for k,v in data.items() if v != ''}
         # ユニークキー違反 url エラーをスキップ
-        sql = insert(Tousan).on_conflict_do_nothing(
-            index_elements=["url"]
+        sql = insert(modelname).on_conflict_do_nothing(
+            index_elements=confilict
         )
         try:
             session.execute(sql, data)
@@ -97,7 +95,8 @@ def save_csv_file_to_db(fname):
 
 
     # DBに保存
-    commit_count = save_db(datas_prefecture)
+    confilict = ["url"]
+    commit_count = save_db(datas_prefecture, Tousan, confilict)
     return commit_count
 
 def main():

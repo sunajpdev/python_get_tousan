@@ -7,7 +7,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from sqlalchemy.dialects.postgresql import insert
 
-from .db import session, engine, City, Prefecture, Tousan
+from .db import session, engine
+from .models import City, Prefecture, Tousan
 from .lib.lib_csv import LibCsv
 from .lib.address import get_address_to_prefecture_city
 

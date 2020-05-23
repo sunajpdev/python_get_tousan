@@ -1,4 +1,5 @@
-from src.db import session, engine, City, Prefecture
+from src.db import session, engine
+from src.models import City, Prefecture
 
 # 都道府県 変換
 def get_prefecture(address):

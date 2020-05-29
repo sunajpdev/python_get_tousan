@@ -25,7 +25,11 @@
         <td>{{ t.tousan_date.strftime('%m-%d') }}</td>
         <td><a href="{{ url_for('prefecture', prefecture=t.prefecture) }}">{{ t.prefecture }}</a></td>
         <td><a href="{{ t.url }}">{{ t.name }}</td>
-        <td><a href={{ url_for('indastry', indastry=t.indastry)}}>{{ t.indastry }}</a></td>
+        <td>
+        {% if t.indastry %}
+            <a href={{ url_for('indastry', indastry=t.indastry if t.indastry)}}>{{ t.indastry }}</a>
+        {% endif %}
+        </td>
         <td>{{ t.debt if t.debt else "" }}</td>
     </tr>
 {% endfor %}

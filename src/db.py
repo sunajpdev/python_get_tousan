@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -31,3 +31,6 @@ session = scoped_session(
 # 各modelで利用
 # classとDBをMapping
 Base = declarative_base()
+
+# funcを使えるようにする
+func = func

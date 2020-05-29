@@ -1,7 +1,8 @@
 import datetime
 
 from flask import Flask, render_template
-from src.db import session, engine, func, City, Prefecture, Tousan
+from src.db import session, engine, func
+from src.models import City, Prefecture, Tousan
 
 
 app = Flask(__name__)
